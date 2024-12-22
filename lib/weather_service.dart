@@ -1,115 +1,117 @@
-// import 'dart:convert';
-
-// import 'package:geocoding/geocoding.dart';
-// import 'package:geolocator/geolocator.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:weather/weather_model.dart';
-// // import 'package:permission_handler/permission_handler.dart';
-
-// class WeatherService {
-//   static const BASE_URL =
-//       "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key}";
-//   final String apiKey;
-
-//   WeatherService(this.apiKey);
-
-//   Future<Weather> getWeather(String cityName) async {
-//     final response = await http
-//         .get(Uri.parse('$BASE_URL?q=$cityName&appid=$apiKey&units=metric'));
-
-//     if (response.statusCode == 200) {
-//       return Weather.fromJson(jsonDecode(response.body));
-//     } else {
-//       throw Exception("failed to load weather data");
-//     }
-//   }
-
-// // get the current location and ask for the permission from the user
-//   Future<String> getCurrentCity() async {
-//     LocationPermission permission = await Geolocator.checkPermission();
-//     if (permission == LocationPermission.denied) {
-//       permission = await Geolocator.requestPermission();
-//     }
-
-//     // fetch the current location
-
-//     Position position = await Geolocator.getCurrentPosition(
-//         desiredAccuracy: LocationAccuracy.high);
-
-//     // covert the location into a list of placemark objects
-
-//     List<Placemark> placemarks =
-//         await placemarkFromCoordinates(position.latitude, position.longitude);
-//     String? city = placemarks[0].locality;
-
-//     return city ?? "";
-//   }
-// }
-
-// // Future<void> checkPermission(Permission permission) async {
-// //   final status = await permission.request();
-// //   if (status.isGranted){
-// //     ScaffoldMessenger.of().showSnackBar(SnackBar(content: Text("Permission is granted")));
-// //   }
-// //   else{
-
-// //   }
-// // }
 import 'dart:convert';
 
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:weather/weather_model.dart';
+import 'package:weather/hourly_model.dart';
+
+import 'weather_model.dart';
 
 class WeatherService {
-  // ignore: constant_identifier_names
-  static const BASE_URL =
-      "https://api.openweathermap.org/data/2.5/weather";
+  // Base URL for OpenWeather API
+  static const BASE_URL = "https://api.openweathermap.org/data/2.5/weather";
   final String apiKey;
 
   WeatherService(this.apiKey);
 
+  // Fetch weather data for a given city
   Future<Weather> getWeather(String cityName) async {
     final url = '$BASE_URL?q=$cityName&appid=$apiKey&units=metric';
-    ('Requesting weather data from: $url');
+    print('Requesting weather data from: $url');
 
-    final response = await http.get(Uri.parse(url));
+    try {
+      final response = await http.get(Uri.parse(url));
 
-    if (response.statusCode == 200) {
-      ('Weather data received: ${response.body}');
-      return Weather.fromJson(jsonDecode(response.body));
-    } else {
-      (
-          'Failed to load weather data. Status code: ${response.statusCode}, Response: ${response.body}');
-      throw Exception("Failed to load weather data");
+      if (response.statusCode == 404) {
+        throw Exception("City not found");
+      } else if (response.statusCode == 401) {
+        throw Exception("Invalid API key");
+      } else if (response.statusCode == 200) {
+        print('Weather data received: ${response.body}');
+        return Weather.fromJson(jsonDecode(response.body));
+      } else {
+        print('Failed to load weather data. Status: ${response.statusCode}');
+        throw Exception("Failed to load weather data");
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception("An error occurred while loading weather data");
     }
   }
 
-  Future<String> getCurrentCity() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+  // Get the current city name using location services
+  // Future<String> getCurrentCity() async {
+  //   try {
+  //     // Check and request location permissions
+  //     LocationPermission permission = await Geolocator.checkPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       permission = await Geolocator.requestPermission();
+  //     }
+
+  //     if (permission == LocationPermission.deniedForever) {
+  //       return "Unknown"; // Return default value if permissions are denied
+  //     }
+
+  //     // Get current location
+  //     Position position = await Geolocator.getCurrentPosition(
+  //       desiredAccuracy: LocationAccuracy.high,
+  //     );
+
+  //     // Get city name using geocoding
+  //     List<Placemark> placemarks = await placemarkFromCoordinates(
+  //       position.latitude,
+  //       position.longitude,
+  //     );
+
+  //     if (placemarks.isNotEmpty) {
+  //       String? city =
+  //           placemarks.first.locality ?? placemarks.first.administrativeArea;
+  //       return city ?? "Unknown"; // Return "Unknown" if city is null
+  //     } else {
+  //       return "Unknown";
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching current city: $e");
+  //     return "Unknown"; // Return "Unknown" if an error occurs
+  //   }
+  // }
+
+  Future<Weather> getWeatherByCoordinates(double lat, double lon) async {
+    final url = '$BASE_URL?lat=$lat&lon=$lon&appid=$apiKey&units=metric';
+    print('Requesting weather data from: $url');
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return Weather.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception(
+            "Failed to load weather data. Status: ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Error occurred: $e');
+      throw Exception("An error occurred while loading weather data.");
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception(
-          "Location permissions are permanently denied, we cannot request permissions.");
-    }
-
-    if (permission == LocationPermission.denied) {
-      throw Exception("Location permissions are denied.");
-    }
-
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    ('Current position: ${position.latitude}, ${position.longitude}');
-
-    List<Placemark> placemarks =
-        await placemarkFromCoordinates(position.latitude, position.longitude);
-    String? city = placemarks[0].locality;
-    ('Detected city: $city');
-
-    return city ?? "";
   }
+
+  getCurrentCity() {}
+
+  // Future<List<HourlyWeather>> getHourlyWeather(double lat, double lon) async {
+  //   const url =
+  //       "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude={part}&appid={API key}";
+  //   print("Requesting hourly weather from: $url");
+
+  //   try {
+  //     final response = await http.get(Uri.parse(url));
+  //     print("API Response: ${response.body}");
+  //     if (response.statusCode == 200) {
+  //       final json = jsonDecode(response.body);
+  //       final List<dynamic> hourlyData =
+  //           json['forecast']['forecastday'][0]['hour'];
+  //       return hourlyData.map((data) => HourlyWeather.fromJson(data)).toList();
+  //     } else {
+  //       throw Exception("Failed to load hourly weather data");
+  //     }
+  //   } catch (e) {
+  //     print("Error occurred: $e");
+  //     throw Exception("An error occurred while fetching hourly weather data");
+  //   }
+  // }
 }

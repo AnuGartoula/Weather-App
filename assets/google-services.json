@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "211970030477",
+    "project_id": "tasker-fcb1c",
+    "storage_bucket": "tasker-fcb1c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:211970030477:android:33d80284ac52426529dbc4",
+        "android_client_info": {
+          "package_name": "com.tasker.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1ipTHUNXFzwxmrKo6902tDum3YASpa18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
